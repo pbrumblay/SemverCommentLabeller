@@ -4,11 +4,11 @@ SemverCommentLabeller
 Based off CruiseControl.NET's AssemblyVersionLabeller, this Semver inspired labeller increments build numbers by looking for keyword prefixes in comments.
 
 Inspiration
-===========
+-----------
 I was using the assemblyVersionLabeller which was auto-incrementing the patch and updating the revision number and then I read this: http://blog.ploeh.dk/2013/12/10/semantic-versioning-with-continuous-deployment/. Re: "Versioning is a programmer decision". Damn. He's right. This was the quickest way I could think of to change our process and make it easy to put this decision into our developers' hands.
 
 Usage
-=====
+-----
 When typing a comment add a prefix with the following case-insensitive strings if you want the corresponding number to change: "major:", "minor:", or "patch:".
 
 Examples:
@@ -26,7 +26,7 @@ Example config:
 ```
 
 Notes
-=====
+-----
 - If you don't include a prefix in the comment the only part of the number which is updated is the revision (the 4th part).
 - Updating "major" zeros out "minor" and "patch"; updating "minor" zeros out "patch".
 - Written with VisualStudio 2012, CruiseControl.NET 1.8.3, and SVN.
