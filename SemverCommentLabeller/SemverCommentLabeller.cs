@@ -128,7 +128,7 @@ namespace SemverCommentLabeller
             {
                 foreach (var mod in integrationResult.Modifications)
                 {
-                    if (String.IsNullOrWhiteSpace(mod.Comment))
+                    if (String.IsNullOrEmpty(mod.Comment) && mod.Comment.Trim() != String.Empty)
                     {
                         continue;
                     }
