@@ -21,6 +21,15 @@ namespace SemverCommentLabeller
         : LabellerBase
     {
         #region public properties
+
+        private bool _resetVersion = false;
+        [ReflectorProperty("resetVersion", Required = false)]
+        public bool ResetVersion
+        {
+            get { return _resetVersion; }
+            set { _resetVersion = value; }
+        }
+
         /// <summary>
         /// Major number component of the version. Incremented when a comment is prefixed with the case-insensitive string "major:". 
         /// </summary>
@@ -103,7 +112,7 @@ namespace SemverCommentLabeller
         public override string Generate(IIntegrationResult integrationResult)
         {
             Version oldVersion;
-            int major, minor, patch, revision;
+            int major, minor, patch, revision = 0;
 
             // try getting old version
             try
@@ -124,63 +133,74 @@ namespace SemverCommentLabeller
             Log.Debug(string.Concat("[semverCommentLabeller] Old version is: ", oldVersion.ToString()));
 
             VersionNumberChange change = VersionNumberChange.None;
-            if (integrationResult.HasModifications())
+
+            if (ResetVersion)
             {
-                foreach (var mod in integrationResult.Modifications)
-                {
-                    if (String.IsNullOrEmpty(mod.Comment) && mod.Comment.Trim() != String.Empty)
-                    {
-                        continue;
-                    }
-                    var comment = mod.Comment.ToUpperInvariant();
-
-                    if (comment.StartsWith(MAJOR_PREFIX))
-                    {
-                        change = VersionNumberChange.Major;
-                        break;
-                    }
-                    else if (comment.StartsWith(MINOR_PREFIX))
-                    {
-                        change = VersionNumberChange.Minor;
-                    }
-                    else if (comment.StartsWith(PATCH_PREFIX) && change == VersionNumberChange.None)
-                    {
-                        change = VersionNumberChange.Patch;
-                    }
-                }
-            }
-
-            switch (change)
-            {
-                case VersionNumberChange.Major:
-                    major++;
-                    minor = patch = 0;
-                    break;
-                case VersionNumberChange.Minor:
-                    minor++;
-                    patch = 0;
-                    break;
-                case VersionNumberChange.Patch:
-                    patch++;
-                    break;
-            }
-
-            //Calculate revision
-            if (int.TryParse(integrationResult.LastChangeNumber, out revision))
-            {
-                Log.Debug(
-                    string.Format(System.Globalization.CultureInfo.CurrentCulture, "[semverCommentLabeller] LastChangeNumber retrieved: {0}",
-                    revision));
-
-                int modVal = RevisionModulusValue > 0 ? RevisionModulusValue : 10000;
-                revision %= modVal;
+                major = Major;
+                minor = Minor;
+                patch = Patch;
+                revision = Revision;
             }
             else
             {
-                Log.Debug("[semverCommentLabeller] LastChangeNumber of source control is '{0}', set revision number to '0'.",
-                          string.IsNullOrEmpty(integrationResult.LastChangeNumber)
-                              ? "N/A"
-                              : integrationResult.LastChangeNumber);
+                if (integrationResult.HasModifications())
+                {
+                    foreach (var mod in integrationResult.Modifications)
+                    {
+                        if (String.IsNullOrEmpty(mod.Comment) && mod.Comment.Trim() != String.Empty)
+                        {
+                            continue;
+                        }
+                        var comment = mod.Comment.ToUpperInvariant();
+
+                        if (comment.StartsWith(MAJOR_PREFIX))
+                        {
+                            change = VersionNumberChange.Major;
+                            break;
+                        }
+                        else if (comment.StartsWith(MINOR_PREFIX))
+                        {
+                            change = VersionNumberChange.Minor;
+                        }
+                        else if (comment.StartsWith(PATCH_PREFIX) && change == VersionNumberChange.None)
+                        {
+                            change = VersionNumberChange.Patch;
+                        }
+                    }
+                }
+
+                switch (change)
+                {
+                    case VersionNumberChange.Major:
+                        major++;
+                        minor = patch = 0;
+                        break;
+                    case VersionNumberChange.Minor:
+                        minor++;
+                        patch = 0;
+                        break;
+                    case VersionNumberChange.Patch:
+                        patch++;
+                        break;
+                }
+
+                //Calculate revision
+                if (int.TryParse(integrationResult.LastChangeNumber, out revision))
+                {
+                    Log.Debug(
+                        string.Format(System.Globalization.CultureInfo.CurrentCulture, "[semverCommentLabeller] LastChangeNumber retrieved: {0}",
+                        revision));
+
+                    int modVal = RevisionModulusValue > 0 ? RevisionModulusValue : 10000;
+                    revision %= modVal;
+                }
+                else
+                {
+                    Log.Debug("[semverCommentLabeller] LastChangeNumber of source control is '{0}', set revision number to '0'.",
+                              string.IsNullOrEmpty(integrationResult.LastChangeNumber)
+                                  ? "N/A"
+                                  : integrationResult.LastChangeNumber);
+                }
             }
 
             // use the revision from last build,
